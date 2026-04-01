@@ -1,0 +1,62 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: trips
+    // Document ID: auto-generated
+    // Fields:
+    //   - uid: string (required) - The user ID who saved the trip
+    //   - destination: string (required)
+    //   - duration: number (required)
+    //   - budget: string (required)
+    //   - style: string (required)
+    //   - totalEstimatedCost: number (required)
+    //   - weatherPreview: string (required)
+    //   - itinerary: list (required)
+    //   - createdAt: timestamp (required)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.uid;
+    }
+
+    function isValidTrip(data) {
+      return data.keys().hasAll(['uid', 'destination', 'duration', 'budget', 'style', 'totalEstimatedCost', 'itinerary', 'createdAt']) &&
+             data.uid == request.auth.uid &&
+             data.destination is string && data.destination.size() > 0 && data.destination.size() < 100 &&
+             data.duration is number && data.duration > 0 &&
+             data.budget in ['low', 'medium', 'high'] &&
+             data.style is string &&
+             data.totalEstimatedCost is number &&
+             data.itinerary is list &&
+             data.createdAt is timestamp;
+    }
+
+    match /trips/{tripId} {
+      allow read: if isDocOwner();
+      allow create: if isAuthenticated() && isValidTrip(request.resource.data);
+      allow update: if false; // Trips are immutable for now
+      allow delete: if isDocOwner();
+    }
+
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+  }
+}

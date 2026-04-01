@@ -1,0 +1,7 @@
+{
+  "name": "AI Smart Travel Planner",
+  "description": "A futuristic, AI-powered travel planning application that generates personalized itineraries with interactive maps and budget visualizations.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
